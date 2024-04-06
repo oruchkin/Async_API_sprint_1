@@ -13,33 +13,30 @@ class Film(BaseModel):
     title: str
 
 
-@router.get('/', response_model=list[Film])
+@router.get("/", response_model=list[Film])
 async def list_films(film_service: FilmService = Depends(get_film_service)) -> list[Film]:
     return []
 
 
-@router.get('/search', response_model=list[Film])
+@router.get("/search", response_model=list[Film])
 async def search_films(film_service: FilmService = Depends(get_film_service)) -> list[Film]:
     return []
 
 
 # Внедряем FilmService с помощью Depends(get_film_service)
-@router.get(
-        '/{film_id}',
-        response_model=Film,
-        summary="Полная информация по фильму")
+@router.get("/{film_id}", response_model=Film, summary="Полная информация по фильму")
 async def film_details(film_id: str, film_service: FilmService = Depends(get_film_service)) -> Film:
     film = await film_service.get_by_id(film_id)
     if not film:
         # Если фильм не найден, отдаём 404 статус
-        # Желательно пользоваться уже определёнными HTTP-статусами, которые содержат enum  
+        # Желательно пользоваться уже определёнными HTTP-статусами, которые содержат enum
         # Такой код будет более поддерживаемым
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='film not found')
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="film not found")
 
     # Перекладываем данные из models.Film в Film
-    # Обратите внимание, что у модели бизнес-логики есть поле description 
-        # Которое отсутствует в модели ответа API. 
-        # Если бы использовалась общая модель для бизнес-логики и формирования ответов API
-        # вы бы предоставляли клиентам данные, которые им не нужны 
-        # и, возможно, данные, которые опасно возвращать
+    # Обратите внимание, что у модели бизнес-логики есть поле description
+    # Которое отсутствует в модели ответа API.
+    # Если бы использовалась общая модель для бизнес-логики и формирования ответов API
+    # вы бы предоставляли клиентам данные, которые им не нужны
+    # и, возможно, данные, которые опасно возвращать
     return Film(id=film.id, title=film.title)

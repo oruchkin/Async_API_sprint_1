@@ -13,14 +13,11 @@ class Genre(BaseModel):
     title: str
 
 
-@router.get('/', response_model=list[Genre], summary="Список жанров")
+@router.get("/", response_model=list[Genre], summary="Список жанров")
 async def list_genres(genre_service: GenreService = Depends(get_genre_service)) -> list[Genre]:
     return []
 
 
-@router.get(
-        '/{genre_id}',
-        response_model=Genre,
-        summary="Данные по конкретному жанру")
+@router.get("/{genre_id}", response_model=Genre, summary="Данные по конкретному жанру")
 async def film_details(genre_id: str, genre_service: GenreService = Depends(get_genre_service)) -> Genre:
-    raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='genre not found')
+    raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="genre not found")

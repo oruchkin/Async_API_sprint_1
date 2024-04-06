@@ -6,7 +6,10 @@
         "vscode": {
             "extensions": [
                 "ms-python.python",
-                "ms-python.vscode-pylance"
+                "ms-python.vscode-pylance",
+                "ms-python.flake8",
+                "ms-python.black-formatter",
+                "ms-python.isort"
             ],
             "settings": {
                 "python.pythonPath": "/usr/local/bin/python",
@@ -33,18 +36,26 @@
                     ".vscode test": true
                 },
                 "editor.codeActionsOnSave": {
-                    "source.organizeImports": "always",
+                    "source.organizeImports": "always"
                 },
-                "isort.args": ["--profile", "black"],
-                  "black-formatter.args": ["--line-length", "120"],
-                  "flake8.args": ["--max-line-length=120"],
+                "isort.args": [
+                    "--profile",
+                    "black"
+                ],
+                "black-formatter.args": [
+                    "--line-length",
+                    "120"
+                ],
+                "flake8.args": [
+                    "--max-line-length=120"
+                ],
                 "[python]": {
                     "editor.formatOnSave": true,
                     "editor.codeActionsOnSave": {
                         "source.fixAll.eslint": "explicit",
                         "source.organizeImports.isort": "explicit"
                     },
-                    "editor.defaultFormatter": "ms-python.black-formatter",
+                    "editor.defaultFormatter": "ms-python.black-formatter"
                 },
                 "prettier.printWidth": 120,
                 "prettier.singleQuote": false,
@@ -54,7 +65,7 @@
                 "python.testing.unittestEnabled": false,
                 "python.testing.pytestEnabled": true,
                 "python.analysis.autoImportCompletions": true,
-                  "python.analysis.typeCheckingMode": "basic"
+                "python.analysis.typeCheckingMode": "basic"
             }
         }
     },
