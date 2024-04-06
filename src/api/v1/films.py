@@ -13,20 +13,27 @@ class Film(BaseModel):
     title: str
 
 
+@router.get('/', response_model=list[Film])
+async def list_films(film_service: FilmService = Depends(get_film_service)) -> list[Film]:
+    return []
+
+
+@router.get('/search', response_model=list[Film])
+async def search_films(film_service: FilmService = Depends(get_film_service)) -> list[Film]:
+    return []
+
+
 # Внедряем FilmService с помощью Depends(get_film_service)
 @router.get(
         '/{film_id}',
         response_model=Film,
-        summary="Film lookup by the id",
-        description="Performs film lookup by the provided film id",
-        response_description="Found film or 404 if nothing found",
-        tags=["Film"])
+        summary="Полная информация по фильму")
 async def film_details(film_id: str, film_service: FilmService = Depends(get_film_service)) -> Film:
     film = await film_service.get_by_id(film_id)
     if not film:
         # Если фильм не найден, отдаём 404 статус
         # Желательно пользоваться уже определёнными HTTP-статусами, которые содержат enum  
-                # Такой код будет более поддерживаемым
+        # Такой код будет более поддерживаемым
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='film not found')
 
     # Перекладываем данные из models.Film в Film
