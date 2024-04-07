@@ -1,16 +1,21 @@
 import logging
+import logging.config
 from contextlib import asynccontextmanager
 
 import uvicorn
+from api.v1 import films, genres, persons
+from core import config
+from core.logger import LOGGING
+from db import elastic, redis
+from dotenv import load_dotenv
 from elasticsearch import AsyncElasticsearch
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 from redis.asyncio import Redis
 
-from api.v1 import films, genres, persons
-from core import config
-from core.logger import LOGGING
-from db import elastic, redis
+load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -42,4 +47,6 @@ if __name__ == "__main__":
         "main:app",
         host="0.0.0.0",
         port=8000,
+        log_config=LOGGING,
+        log_level=logging.DEBUG,
     )
