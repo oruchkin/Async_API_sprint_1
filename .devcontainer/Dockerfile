@@ -10,7 +10,7 @@ ENV PYTHONUNBUFFERED=1
 RUN apt-get update \
 && apt-get install -y --no-install-recommends git \
 && apt-get purge -y --auto-remove \
-&& rm -rf /var/lib/apt/lists/*
+&& rm -rf /var/lib/apt/lists/* \
 && git config --global core.autocrlf true
 
 # Copy python requirements to the docker container and install
