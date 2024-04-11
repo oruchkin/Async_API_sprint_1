@@ -14,8 +14,7 @@ CACHE_EXPIRE_IN_SECONDS = 60 * 5
 
 class PersonService(ServiceABC):
     def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
-        self.redis = redis
-        self.elastic = elastic
+        super().__init__(redis, elastic)
 
     async def get_by_id(self, person_id: UUID) -> Person | None:
         cache_key = f"persons:{person_id}"
