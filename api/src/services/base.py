@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Literal, cast
+from typing import Any, Literal, cast
 from uuid import UUID
 
 from elasticsearch import AsyncElasticsearch, NotFoundError
@@ -19,4 +19,8 @@ class ServiceABC(ABC):
             return cast(dict, data)["_source"]
         except NotFoundError:
             return None
-        
+
+    async def _query_from_elastic(self, index: INDICES, query: dict) -> list[Any]:
+        data = await self.elastic.search(index=index, body={"query": query})
+        docs = cast(dict, data)["hits"]["hits"]
+        return [doc["_source"] for doc in docs]
