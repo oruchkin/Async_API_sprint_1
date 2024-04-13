@@ -4,6 +4,7 @@ from uuid import UUID
 from api.v1.films import Film
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from services.film import FilmService, get_film_service
 from services.person import PersonService, get_person_service
 
 router = APIRouter()
@@ -28,5 +29,6 @@ async def get_person(person_id: UUID, person_service: PersonService = Depends(ge
 
 
 @router.get("/{person_id}/films", response_model=list[Film], summary="Фильмы по персоне")
-async def list_person_films(person_service: PersonService = Depends(get_person_service)) -> list[Film]:
-    return []
+async def list_person_films(person_id: UUID, film_service: FilmService = Depends(get_film_service)) -> list[Film]:
+    entities = await film_service.find_by_person(person_id)
+    return [Film(**film.model_dump()) for film in entities]

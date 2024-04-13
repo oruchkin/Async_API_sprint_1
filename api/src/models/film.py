@@ -7,6 +7,7 @@ class Film(BaseModel):
     id: str
     title: str
     description: str
+    imdb_rating: float
 
     class Config:
         json_loads = orjson.loads

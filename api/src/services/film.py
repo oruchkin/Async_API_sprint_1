@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal, get_args
 from uuid import UUID
 
 from db.elastic import get_elastic
@@ -10,6 +11,8 @@ from redis.asyncio import Redis
 from services.base import ServiceABC
 
 FILM_CACHE_EXPIRE_IN_SECONDS = 60 * 5
+
+PERSON_PROPERTY = Literal["directors", "actors", "writers"]
 
 
 class FilmService(ServiceABC):
@@ -28,6 +31,18 @@ class FilmService(ServiceABC):
             film = Film(**doc)
             await self._put_film_to_cache(cache_key, film)
             return film
+
+    async def find_by_person(self, person_id: UUID) -> list[Film]:
+        """
+        Search for films by person took part in production
+        """
+        subqueries = [FilmService._construct_find_by_person_subquery(person_id, m) for m in get_args(PERSON_PROPERTY)]
+        data = await self._query_from_elastic("movies", {"bool": {"should": subqueries}})
+        return [Film(**doc) for doc in data]
+
+    @staticmethod
+    def _construct_find_by_person_subquery(person_id: UUID, property: str) -> dict:
+        return {"nested": {"path": property, "query": {"bool": {"should": [{"match": {f"{property}.id": person_id}}]}}}}
 
     async def _film_from_cache(self, key: str) -> Film | None:
         if data := await self.redis.get(key):
