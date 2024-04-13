@@ -12,7 +12,7 @@ class RedisSettings(BaseSettings):
     port: int = 6379
 
 
-async def get_redis() -> Redis:
+def get_redis() -> Redis:
     global redis
     if redis is None:
         settings = RedisSettings()

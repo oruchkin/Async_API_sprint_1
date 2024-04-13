@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from api.v1 import films, genres, persons
-from core import config
 from core.logger import LOGGING
 from db import elastic, redis
 from dotenv import load_dotenv
@@ -20,8 +19,10 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    redis.redis = Redis(host=config.REDIS_HOST, port=config.REDIS_PORT)
-    elastic.es = AsyncElasticsearch(hosts=[f"{config.ELASTIC_HOST}:{config.ELASTIC_PORT}"])
+    elasticSettings = elastic.ElasticsearchSettings()
+    elastic.es = AsyncElasticsearch(hosts=[elasticSettings.url])
+    redisSettings = redis.RedisSettings()
+    redis.redis = Redis(host=redisSettings.host, port=redisSettings.port, decode_responses=True)
     yield
     await redis.redis.close()
     await elastic.es.close()

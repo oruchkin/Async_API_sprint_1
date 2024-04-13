@@ -3,10 +3,10 @@ from models.uitls import orjson_dumps
 from pydantic import BaseModel
 
 
-class Film(BaseModel):
+class Person(BaseModel):
     id: str
-    title: str
-    description: str
+    full_name: str
+    gender: str
 
     class Config:
         json_loads = orjson.loads
