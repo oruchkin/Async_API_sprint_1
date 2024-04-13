@@ -12,7 +12,7 @@ from services.base import ServiceABC
 
 FILM_CACHE_EXPIRE_IN_SECONDS = 60 * 5
 
-PERSON_PROPERTY = Literal["directors", "actors", "writers"]
+PERSON_ROLE = Literal["directors", "actors", "writers"]
 
 
 class FilmService(ServiceABC):
@@ -36,7 +36,7 @@ class FilmService(ServiceABC):
         """
         Search for films by person took part in production
         """
-        subqueries = [FilmService._construct_find_by_person_subquery(person_id, m) for m in get_args(PERSON_PROPERTY)]
+        subqueries = [FilmService._construct_find_by_person_subquery(person_id, m) for m in get_args(PERSON_ROLE)]
         data = await self._query_from_elastic("movies", {"bool": {"should": subqueries}})
         return [Film(**doc) for doc in data]
 

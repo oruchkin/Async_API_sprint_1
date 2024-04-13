@@ -9,7 +9,7 @@ router = APIRouter()
 
 
 class Film(BaseModel):
-    id: str
+    id: UUID
     title: str
     imdb_rating: float
 
