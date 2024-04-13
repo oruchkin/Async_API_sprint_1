@@ -20,7 +20,7 @@ class ServiceABC(ABC):
         except NotFoundError:
             return None
 
-    async def _query_from_elastic(self, index: INDICES, query: dict) -> list[Any]:
-        data = await self.elastic.search(index=index, body={"query": query})
+    async def _query_from_elastic(self, index: INDICES, query: dict, size: int = 1000, skip: int = 0) -> list[Any]:
+        data = await self.elastic.search(index=index, body={"query": query, "size": size, "from": skip})
         docs = cast(dict, data)["hits"]["hits"]
         return [doc["_source"] for doc in docs]

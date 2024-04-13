@@ -18,6 +18,9 @@ class PersonFilmService:
         self._film_service = film_service
         self._person_service = person_service
 
+    async def search(self, query: str, page_number: int = 1, page_size: int = 50) -> list[Person]:
+        return await self._person_service.find(query, page_number, page_size)
+
     async def get_person_with_films(self, person_id: UUID) -> tuple[Person | None, list[Film]]:
         filmsTask = self._film_service.find_by_person(person_id)
         personTask = self._person_service.get_by_id(person_id)

@@ -4,7 +4,7 @@ from typing import get_args
 from uuid import UUID
 
 from api.v1.films import Film
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from models.film import Film as FilmModel
 from pydantic import BaseModel
 from services.film import PERSON_ROLE, FilmService, get_film_service
@@ -26,8 +26,14 @@ class Person(BaseModel):
 
 
 @router.get("/search", response_model=list[Person], summary="Поиск по персонам")
-async def search_persons(person_service: PersonService = Depends(get_person_service)) -> list[Person]:
-    return []
+async def search_persons(
+    query: str = Query(..., description="Search string"),
+    page_number: int | None = Query(..., description="Page number [1, N], default 1"),
+    page_size: int | None = Query(..., description="Page size [1, 100], default 50"),
+    person_service: PersonService = Depends(get_person_service),
+) -> list[Person]:
+    entities = await person_service.find(query, page_number or 1, page_size or 50)
+    return [Person(id=person.id, full_name=person.full_name, films=[]) for person in entities]
 
 
 @router.get("/{person_id}", response_model=Person, summary="Данные по персоне")
