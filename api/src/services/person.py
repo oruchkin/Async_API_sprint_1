@@ -26,6 +26,11 @@ class PersonService(ServiceABC):
             await self._put_to_cache(cache_key, person)
             return person
 
+    async def search(self, search: str, page_number: int = 1, page_size: int = 50) -> list[Person]:
+        query = {"bool": {"must": [{"match": {"full_name": search}}]}}
+        entities = await self._query_from_elastic("persons", query, page_size, (page_number - 1) * page_size)
+        return [Person(**doc) for doc in entities]
+
     async def _from_cache(self, key: str) -> Person | None:
         if data := await self.redis.get(key):
             return Person.model_validate_json(data)

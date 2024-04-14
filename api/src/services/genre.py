@@ -17,10 +17,16 @@ class GenreService(ServiceABC):
         super().__init__(redis, elastic)
 
     async def get_all(self) -> list[Genre]:
+        """
+        Get all available genres
+        """
         docs = await self._query_from_elastic("genres", {"match_all": {}})
         return [Genre(**doc) for doc in docs]
 
     async def get_by_id(self, genre_id: UUID) -> Genre | None:
+        """
+        Get single genre by id
+        """
         cache_key = f"genres:{genre_id}"
         if genre := await self._from_cache(cache_key):
             return genre
