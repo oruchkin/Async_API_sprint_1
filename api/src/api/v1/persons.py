@@ -1,16 +1,23 @@
+import json
+import logging
 from http import HTTPStatus
 from typing import Annotated, get_args
 from uuid import UUID
 
 from api.v1.films import Film
+from db.redis import get_redis
 from fastapi import APIRouter, Depends, HTTPException, Query
 from models.film import Film as FilmModel
 from models.person import Person as PersonModel
 from pydantic import BaseModel
+from redis.asyncio import Redis
 from services.film import PERSON_ROLE, FilmService, get_film_service
 from services.person_film import PersonFilmService, get_person_film_service
 
 router = APIRouter()
+
+
+logger = logging.getLogger(__name__)
 
 
 class PersonFilm(BaseModel):
@@ -30,9 +37,20 @@ async def search_persons(
     page_number: Annotated[int | None, Query(..., ge=1, description="Page number [1, N]")] = 1,
     page_size: Annotated[int | None, Query(..., ge=1, le=100, description="Page size [1, 100]")] = 50,
     person_film_service: PersonFilmService = Depends(get_person_film_service),
+    redis: Redis = Depends(get_redis),
 ) -> list[Person]:
+    key = f"persons:{query}:{page_number}:{page_size}"
+    if cache := await redis.get(key):
+        data_list = json.loads(cache)
+        return [Person.model_validate_json(data) for data in data_list]
+
+    logger.debug("Persons search cache missed")
     entities = await person_film_service.search(query, page_number or 1, page_size or 50)
-    return [_construct_person_films(person, films) for (person, films) in entities]
+    persons = [_construct_person_films(person, films) for (person, films) in entities]
+    data_list = [person.model_dump_json() for person in persons]
+    cache = json.dumps(data_list)
+    await redis.set(key, cache, 60 * 5)
+    return persons
 
 
 @router.get("/{person_id}", response_model=Person, summary="Данные по персоне")
@@ -47,9 +65,21 @@ async def get_person(
 
 
 @router.get("/{person_id}/films", response_model=list[Film], summary="Фильмы по персоне")
-async def list_person_films(person_id: UUID, film_service: FilmService = Depends(get_film_service)) -> list[Film]:
+async def list_person_films(
+    person_id: UUID, film_service: FilmService = Depends(get_film_service), redis: Redis = Depends(get_redis)
+) -> list[Film]:
+    key = f"persons:{person_id}:films"
+    if cache := await redis.get(key):
+        raw_list = json.loads(cache)
+        [Film.model_validate_json(data) for data in raw_list]
+
+    logger.debug(f"Person films cache missed {person_id}")
     entities = await film_service.find_by_person(person_id)
-    return [Film(**film.model_dump()) for film in entities]
+    films_list = [Film(**film.model_dump()) for film in entities]
+    raw_list = [film.model_dump_json() for film in films_list]
+    value = json.dumps(raw_list)
+    await redis.set(key, value, 60 * 5)
+    return films_list
 
 
 def _construct_person_films(person: PersonModel, films: list[FilmModel]) -> Person:
