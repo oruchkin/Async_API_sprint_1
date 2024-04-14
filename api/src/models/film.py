@@ -13,7 +13,7 @@ class PersonId(BaseModel):
 class Film(BaseModel):
     id: UUID
     title: str
-    description: str
+    description: str | None
     imdb_rating: float
     directors: list[PersonId]
     actors: list[PersonId]

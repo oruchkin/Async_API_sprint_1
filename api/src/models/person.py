@@ -1,12 +1,14 @@
+from uuid import UUID
+
 import orjson
 from models.uitls import orjson_dumps
 from pydantic import BaseModel
 
 
 class Person(BaseModel):
-    id: str
+    id: UUID
     full_name: str
-    gender: str
+    gender: str | None
 
     class Config:
         json_loads = orjson.loads
