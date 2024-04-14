@@ -19,7 +19,8 @@ PERSON_ROLE = Literal["directors", "actors", "writers"]
 
 class FilmService(ServiceABC):
     def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
-        super().__init__(redis, elastic)
+        super().__init__(elastic)
+        self.redis = redis
 
     async def get_by_id(self, film_id: UUID) -> Film | None:
         """

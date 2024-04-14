@@ -3,14 +3,12 @@ from typing import Any, Literal, cast
 from uuid import UUID
 
 from elasticsearch import AsyncElasticsearch, NotFoundError
-from redis.asyncio import Redis
 
 INDICES = Literal["movies", "persons", "genres"]
 
 
 class ServiceABC(ABC):
-    def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
-        self.redis = redis
+    def __init__(self, elastic: AsyncElasticsearch):
         self.elastic = elastic
 
     async def _get_from_elastic(self, index: INDICES, id: UUID) -> dict | None:
