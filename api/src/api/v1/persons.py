@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import get_args
+from typing import Annotated, get_args
 from uuid import UUID
 
 from api.v1.films import Film
@@ -26,9 +26,9 @@ class Person(BaseModel):
 
 @router.get("/search", response_model=list[Person], summary="Поиск по персонам")
 async def search_persons(
-    query: str = Query(..., description="Search string"),
-    page_number: int | None = Query(..., description="Page number [1, N], default 1"),
-    page_size: int | None = Query(..., description="Page size [1, 100], default 50"),
+    query: str = Query(..., min_length=3, description="Search string"),
+    page_number: Annotated[int | None, Query(..., ge=1, description="Page number [1, N]")] = 1,
+    page_size: Annotated[int | None, Query(..., ge=1, le=100, description="Page size [1, 100]")] = 50,
     person_film_service: PersonFilmService = Depends(get_person_film_service),
 ) -> list[Person]:
     entities = await person_film_service.search(query, page_number or 1, page_size or 50)
