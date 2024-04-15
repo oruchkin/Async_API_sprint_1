@@ -1,5 +1,6 @@
 from http import HTTPStatus
 from uuid import UUID
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from models.genre import Genre as Model
@@ -12,7 +13,7 @@ router = APIRouter()
 class Genre(BaseModel):
     id: str
     name: str
-    description: str
+    description: Optional[str] = None
 
 
 def _from_model(model: Model) -> Genre:
