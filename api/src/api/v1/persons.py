@@ -5,7 +5,7 @@ from uuid import UUID
 
 from api.v1.films import Film
 from db.redis import get_redis
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from models.film import Film as FilmModel
 from models.person import Person as PersonModel
 from pydantic import BaseModel, TypeAdapter
@@ -32,6 +32,7 @@ class Person(BaseModel):
 
 @router.get("/search", response_model=list[Person], summary="Поиск по персонам")
 async def search_persons(
+    response: Response,
     query: str = Query(..., min_length=3, description="Search string"),
     page_number: Annotated[int | None, Query(..., ge=1, description="Page number [1, N]")] = 1,
     page_size: Annotated[int | None, Query(..., ge=1, le=100, description="Page size [1, 100]")] = 50,
@@ -48,6 +49,7 @@ async def search_persons(
     persons = [_construct_person_films(person, films) for (person, films) in entities]
     cache = adapter.dump_json(persons)
     await redis.set(key, cache, 60 * 5)
+    response.headers["Cache-Control"] = f"max-age={60 * 5}"
     return persons
 
 
@@ -64,7 +66,10 @@ async def get_person(
 
 @router.get("/{person_id}/films", response_model=list[Film], summary="Фильмы по персоне")
 async def list_person_films(
-    person_id: UUID, film_service: FilmService = Depends(get_film_service), redis: Redis = Depends(get_redis)
+    response: Response,
+    person_id: UUID,
+    film_service: FilmService = Depends(get_film_service),
+    redis: Redis = Depends(get_redis),
 ) -> list[Film]:
     key = f"persons:{person_id}:films"
     adapter = TypeAdapter(list[Film])
@@ -76,6 +81,7 @@ async def list_person_films(
     films_list = [Film(**film.model_dump()) for film in entities]
     cache = adapter.dump_json(films_list)
     await redis.set(key, cache, 60 * 5)
+    response.headers["Cache-Control"] = f"max-age={60 * 5}"
     return films_list
 
 
