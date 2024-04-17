@@ -22,6 +22,33 @@ class FilmService(ServiceABC):
         super().__init__(elastic)
         self.redis = redis
 
+    async def search_films(self, query: str, page_number: int = 1, page_size: int = 10) -> list[Film]:
+        """ Поиск фильмов по текстовому запросу и фильтрам. """
+        search_query = {
+            "bool": {
+                "must": [
+                    {"match": {"title": {"query": query, "fuzziness": "AUTO"}}}
+                ]
+            }
+        }
+        from_index = (page_number - 1) * page_size
+        films_data = await self._query_from_elastic("movies", search_query, size=page_size, skip=from_index)
+        return [Film(**film) for film in films_data]
+
+    async def get_all_films(self, page_number: int, page_size: int) -> list[Film]:
+        """ Возвращает все фильмы из базы. """
+
+        from_index = (page_number - 1) * page_size
+        query = {"match_all": {}}
+        films_data = await self._query_from_elastic("movies", query, size=page_size, skip=from_index)
+
+        prepared_films = []
+        for film in films_data:
+            if film.get('imdb_rating') is None:
+                film['imdb_rating'] = 0
+            prepared_films.append(Film(**film))
+        return prepared_films
+
     async def get_by_id(self, film_id: UUID) -> Film | None:
         """
         get_by_id возвращает объект фильма. Он опционален, так как фильм может отсутствовать в базе
@@ -89,7 +116,7 @@ class FilmService(ServiceABC):
 
 @lru_cache()
 def get_film_service(
-    redis: Redis = Depends(get_redis),
-    elastic: AsyncElasticsearch = Depends(get_elastic),
+        redis: Redis = Depends(get_redis),
+        elastic: AsyncElasticsearch = Depends(get_elastic),
 ) -> FilmService:
     return FilmService(redis, elastic)

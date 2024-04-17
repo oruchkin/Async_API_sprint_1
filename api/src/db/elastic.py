@@ -1,12 +1,9 @@
 from typing import Optional
 
 from elasticsearch import AsyncElasticsearch
-from pydantic_settings import BaseSettings, SettingsConfigDict
+# from pydantic_settings import BaseSettings, SettingsConfigDict
+from core.settings import ElasticsearchSettings
 
-
-class ElasticsearchSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="ES_")
-    url: str = ""
 
 
 es: Optional[AsyncElasticsearch] = None

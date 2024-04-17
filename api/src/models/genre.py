@@ -1,3 +1,5 @@
+from typing import Optional
+
 import orjson
 from models.uitls import orjson_dumps
 from pydantic import BaseModel
@@ -6,7 +8,7 @@ from pydantic import BaseModel
 class Genre(BaseModel):
     id: str
     name: str
-    description: str
+    description: Optional[str] = None
 
     class Config:
         json_loads = orjson.loads
