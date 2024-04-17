@@ -29,6 +29,7 @@ class Person(BaseModel):
     full_name: str
     films: list[PersonFilm]
 
+# TODO: вынести схемы, в папку v1 shcemas
 
 @router.get("/search", response_model=list[Person], summary="Поиск по персонам")
 async def search_persons(
@@ -86,6 +87,7 @@ async def list_person_films(
 
 
 def _construct_person_films(person: PersonModel, films: list[FilmModel]) -> Person:
+    """ Construct Person model with films """
     model = Person(id=person.id, full_name=person.full_name, films=[])
     model.films = [_extract_film_details(film, person.id) for film in films]
     return model

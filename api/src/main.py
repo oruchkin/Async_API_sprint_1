@@ -1,32 +1,14 @@
-import logging
 import logging.config
-from contextlib import asynccontextmanager
-
 import uvicorn
 from api.v1 import films, genres, persons
 from core.logger import LOGGING
-from db import elastic, redis
 from dotenv import load_dotenv
-from elasticsearch import AsyncElasticsearch
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
-from redis.asyncio import Redis
+from core.lifecycle import lifespan
 
 load_dotenv()
-
-logger = logging.getLogger(__name__)
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    elasticSettings = elastic.ElasticsearchSettings()
-    elastic.es = AsyncElasticsearch(hosts=[elasticSettings.url])
-    redisSettings = redis.RedisSettings()
-    redis.redis = Redis(host=redisSettings.host, port=redisSettings.port, decode_responses=True)
-    yield
-    await redis.redis.close()
-    await elastic.es.close()
-
+logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(
     title="Read-only API для онлайн-кинотеатра",
@@ -36,8 +18,9 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
     default_response_class=ORJSONResponse,
     lifespan=lifespan,
+    log_config=LOGGING,
+    log_level=logging.DEBUG
 )
-
 
 app.include_router(films.router, prefix="/api/v1/films", tags=["films"])
 app.include_router(genres.router, prefix="/api/v1/genres", tags=["genres"])
