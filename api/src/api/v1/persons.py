@@ -4,11 +4,12 @@ from typing import Annotated, get_args
 from uuid import UUID
 
 from api.v1.films import Film
+from api.v1.schemas.person import Person, PersonFilm
 from db.redis import get_redis
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from models.film import Film as FilmModel
 from models.person import Person as PersonModel
-from pydantic import BaseModel, TypeAdapter
+from pydantic import TypeAdapter
 from redis.asyncio import Redis
 from services.film import PERSON_ROLE, FilmService, get_film_service
 from services.person_film import PersonFilmService, get_person_film_service
@@ -18,18 +19,6 @@ router = APIRouter()
 
 logger = logging.getLogger(__name__)
 
-
-class PersonFilm(BaseModel):
-    uuid: UUID
-    roles: list[str]
-
-
-class Person(BaseModel):
-    id: UUID
-    full_name: str
-    films: list[PersonFilm]
-
-# TODO: вынести схемы, в папку v1 shcemas
 
 @router.get("/search", response_model=list[Person], summary="Поиск по персонам")
 async def search_persons(
@@ -87,8 +76,8 @@ async def list_person_films(
 
 
 def _construct_person_films(person: PersonModel, films: list[FilmModel]) -> Person:
-    """ Construct Person model with films """
-    model = Person(id=person.id, full_name=person.full_name, films=[])
+    """Construct Person model with films"""
+    model = Person.model_validate(person)
     model.films = [_extract_film_details(film, person.id) for film in films]
     return model
 

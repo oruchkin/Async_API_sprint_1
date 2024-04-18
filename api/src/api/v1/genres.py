@@ -1,19 +1,12 @@
 from http import HTTPStatus
 from uuid import UUID
-from typing import Optional
 
+from api.v1.schemas.genre import Genre
 from fastapi import APIRouter, Depends, HTTPException
 from models.genre import Genre as Model
-from pydantic import BaseModel
 from services.genre import GenreService, get_genre_service
 
 router = APIRouter()
-
-
-class Genre(BaseModel):
-    id: str
-    name: str
-    description: Optional[str] = None
 
 
 def _from_model(model: Model) -> Genre:

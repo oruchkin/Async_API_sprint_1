@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Any, Literal, cast
+from typing import Any, Literal, Optional, cast
 from uuid import UUID
 
 from elasticsearch import AsyncElasticsearch, NotFoundError
@@ -22,7 +22,12 @@ class ServiceABC(ABC):
         data = await self.elastic.mget({"ids": ids}, index=index)
         return [doc["_source"] for doc in cast(dict, data)["docs"]]
 
-    async def _query_from_elastic(self, index: INDICES, query: dict, size: int = 1000, skip: int = 0) -> list[Any]:
-        data = await self.elastic.search(index=index, body={"query": query, "size": size, "from": skip})
+    async def _query_from_elastic(
+        self, index: INDICES, query: dict, size: int = 1000, skip: int = 0, sort: Optional[dict[str, int]] = None
+    ) -> list[Any]:
+        body = {"query": query, "size": size, "from": skip}
+        if sort:
+            body["sort"] = {key: {"order": "asc" if value > 0 else "desc"} for (key, value) in sort.items()}
+        data = await self.elastic.search(index=index, body=body)
         docs = cast(dict, data)["hits"]["hits"]
         return [doc["_source"] for doc in docs]
