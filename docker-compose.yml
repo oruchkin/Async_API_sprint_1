@@ -49,17 +49,6 @@ services:
     ports:
       - "80:80"
 
-  worker:
-    build:
-      context: etl
-    depends_on:
-      - postgres
-      - elasticsearch
-      - redis
-    env_file:
-      - path: ./.env
-        required: true
-
 volumes:
   dbstorage:
     name: admin-panel-db
