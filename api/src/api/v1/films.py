@@ -20,8 +20,8 @@ async def list_films(
     response: Response,
     page_number: int = Query(1, description="Page number [1, N]", ge=1),
     page_size: int = Query(10, description="Page size [1, 100]", ge=1, le=100),
+    sort: SORT_OPTION = Query("imdb_rating", description="Sorting options"),
     genre: Optional[UUID] = Query(None, description="Films by genre"),
-    sort: Optional[SORT_OPTION] = Query(None, description="Sorting options"),
     film_service: FilmService = Depends(get_film_service),
     redis: Redis = Depends(get_redis),
 ) -> list[Film]:
@@ -33,6 +33,7 @@ async def list_films(
     sort_object: dict[str, int] | None = None
     if sort:
         sort_object = {}
+        # Maybe sort will be an array in future
         for item in [sort]:
             if item[0] == "-":
                 sort_object[item[1:]] = -1
@@ -68,7 +69,6 @@ async def search_films(
     return mapped
 
 
-# Внедряем FilmService с помощью Depends(get_film_service)
 @router.get("/{film_id}", response_model=Film, summary="Полная информация по фильму")
 async def film_details(film_id: UUID, film_service: FilmService = Depends(get_film_service)) -> Film:
     if film := await film_service.get_by_id(film_id):
