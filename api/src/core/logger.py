@@ -53,6 +53,10 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+        'elasticsearch': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+        },
     },
     "root": {
         "level": "INFO",
