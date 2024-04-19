@@ -8,7 +8,7 @@ from fastapi.responses import ORJSONResponse
 from core.lifecycle import lifespan
 
 load_dotenv()
-logging.config.dictConfig.dictConfig(LOGGING)
+logging.config.dictConfig(LOGGING)
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(
