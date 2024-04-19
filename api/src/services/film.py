@@ -1,7 +1,7 @@
 from collections import defaultdict
 from collections.abc import Collection
 from functools import lru_cache
-from typing import Literal, Optional, get_args
+from typing import Literal, get_args
 from uuid import UUID
 
 from db.elastic import get_elastic
@@ -30,7 +30,7 @@ class FilmService(ServiceABC):
         return [Film(**film) for film in films_data]
 
     async def get_all_films(
-        self, page_number: int, page_size: int, genre: Optional[UUID] = None, sort: Optional[dict[str, int]] = None
+        self, page_number: int, page_size: int, genre: UUID | None = None, sort: dict[str, int] | None = None
     ) -> list[Film]:
         """Возвращает все фильмы из базы."""
 

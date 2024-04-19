@@ -1,4 +1,3 @@
-from typing import Optional
 from uuid import UUID
 
 import orjson
@@ -9,7 +8,7 @@ from pydantic import BaseModel
 class Genre(BaseModel):
     id: UUID
     name: str
-    description: Optional[str] = None
+    description: str | None = None
 
     class Config:
         json_loads = orjson.loads

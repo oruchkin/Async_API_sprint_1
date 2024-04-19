@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import Literal, Optional
+from typing import Literal
 from uuid import UUID
 
 from api.v1.schemas.film import Film
@@ -21,7 +21,7 @@ async def list_films(
     page_number: int = Query(1, description="Page number [1, N]", ge=1),
     page_size: int = Query(10, description="Page size [1, 100]", ge=1, le=100),
     sort: SORT_OPTION = Query("imdb_rating", description="Sorting options"),
-    genre: Optional[UUID] = Query(None, description="Films by genre"),
+    genre: UUID | None = Query(None, description="Films by genre"),
     film_service: FilmService = Depends(get_film_service),
     redis: Redis = Depends(get_redis),
 ) -> list[Film]:

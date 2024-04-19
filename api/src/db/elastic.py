@@ -1,12 +1,9 @@
-from typing import Optional
-
 from elasticsearch import AsyncElasticsearch
-# from pydantic_settings import BaseSettings, SettingsConfigDict
 from core.settings import ElasticsearchSettings
 
 
 
-es: Optional[AsyncElasticsearch] = None
+es: AsyncElasticsearch | None = None
 
 
 def get_elastic() -> AsyncElasticsearch:
