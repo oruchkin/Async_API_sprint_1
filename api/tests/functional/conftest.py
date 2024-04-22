@@ -18,7 +18,7 @@ async def es_client():
     await es_client.close()
 
 
-@pytest_asyncio.fixture(name="http_client", scope="session")
+@pytest_asyncio.fixture(name="http_client")
 async def http_client():
     session = aiohttp.ClientSession()
     yield session
@@ -32,10 +32,7 @@ def es_write_data(es_client):
             await es_client.indices.delete(index="movies")
         await es_client.indices.create(index="movies", body=_get_schema("movies"))
 
-        updated, errors = await async_bulk(client=es_client, actions=data)
-
-        if errors:
-            raise Exception("Ошибка записи данных в Elasticsearch")
+        await async_bulk(client=es_client, actions=data)
 
     return inner
 
