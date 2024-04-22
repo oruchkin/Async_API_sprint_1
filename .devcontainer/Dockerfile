@@ -16,6 +16,9 @@ RUN apt-get update \
 # Copy python requirements to the docker container and install
 COPY api/requirements.txt . 
 RUN python -m pip install -r requirements.txt 
- 
+
+COPY api/src/tests/functional/requirements.txt ./api/src/tests/functional/
+RUN python -m pip install -r ./api/src/tests/functional/requirements.txt
+
 #create a non root user to access the container
 RUN adduser -u 5678 --disabled-password --gecos "" vscode
