@@ -1,4 +1,4 @@
-FROM python:3.12
+FROM python:3.12-alpine
 
 WORKDIR /opt/app
 
@@ -11,4 +11,4 @@ COPY src/ .
 
 EXPOSE 8000
 
-ENTRYPOINT ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "main:app"]
+ENTRYPOINT ["gunicorn", "main:app", "--log-level=debug", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]
