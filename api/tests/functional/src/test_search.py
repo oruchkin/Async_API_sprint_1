@@ -11,9 +11,9 @@ import pytest
     ],
 )
 @pytest.mark.asyncio
-async def test_search(make_get_request, es_write_data, query_data, expected_answer):
+async def test_search(make_get_request, es_write_data, query_data: dict, expected_answer: dict):
 
-    # 1. Генерируем данные для ES
+    # arrange
     es_data = [
         {
             "id": str(uuid.uuid4()),
@@ -42,15 +42,17 @@ async def test_search(make_get_request, es_write_data, query_data, expected_answ
         data.update({"_source": row})
         bulk_query.append(data)
 
-    # 2. Загружаем данные в ES
     try:
         await es_write_data(bulk_query)
-        # 3. Запрашиваем данные из ES по API
-        (response, body) = await make_get_request("/api/v1/search", query_data)
 
-        # 4. Проверяем ответ
+        # act
+        (status, body) = await make_get_request("/api/v1/films/search", query_data)
 
-        assert response.status == expected_answer.status
-        assert len(body) == expected_answer.length
+        # assert
+        assert status == expected_answer["status"]
+        assert len(body) == expected_answer["length"]
+    except AssertionError as err:
+        # do not catch AssertionErrors
+        raise err
     except Exception as err:
         assert False, err

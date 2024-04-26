@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from typing import Any
 
@@ -8,6 +9,8 @@ from elasticsearch import AsyncElasticsearch
 from elasticsearch.helpers import async_bulk
 
 from .settings import ElasticsearchSettings, FastAPISettings
+
+logger = logging.getLogger(__name__)
 
 
 @pytest_asyncio.fixture(name="es_client", scope="session")
@@ -20,7 +23,9 @@ async def es_client():
 
 @pytest_asyncio.fixture(name="http_client")
 async def http_client():
-    session = aiohttp.ClientSession()
+    # timout is required as if something goes wrong script will just hang
+    session_timeout = aiohttp.ClientTimeout(total=None, sock_connect=5, sock_read=5)
+    session = aiohttp.ClientSession(timeout=session_timeout)
     yield session
     await session.close()
 
@@ -38,14 +43,17 @@ def es_write_data(es_client):
 
 
 @pytest_asyncio.fixture(name="make_get_request")
-def make_get_request(http_client):
+def make_get_request(http_client: aiohttp.ClientSession):
     api_settings = FastAPISettings()
 
     async def inner(path: str, query_data: dict):
         url = api_settings.url + path
         async with http_client.get(url, params=query_data) as response:
             body = await response.json()
-            return (response, body)
+            if response.status >= 400:
+                raise ValueError(body)
+
+            return (response.status, body)
 
     return inner
 

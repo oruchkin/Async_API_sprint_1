@@ -16,10 +16,11 @@ services:
     command: redis-server --save 20 1 --loglevel warning
 
   fastapi:
+    image: fastapi
     build:
       context: ../../.
     ports:
-      - 8000:8000
+      - 53942:8000
     depends_on:
       - elasticsearch
       - redis
