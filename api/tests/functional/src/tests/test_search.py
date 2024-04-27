@@ -6,11 +6,11 @@ import pytest
 @pytest.mark.parametrize(
     "query_data, expected_answer",
     [
-        ({"search": "The Star"}, {"status": 200, "length": 53}),
-        # ({"search": "Mashed potato"}, {"status": 200, "length": 2}),
+        ({"query": "The Star"}, {"status": 200, "length": 53}),
+        ({"query": "Mashed potato"}, {"status": 200, "length": 2}),
     ],
 )
-@pytest.mark.asyncio
+@pytest.mark.asyncio(scope="session")
 async def test_search(make_get_request, es_write_data, query_data: dict, expected_answer: dict):
 
     # arrange
@@ -32,6 +32,7 @@ async def test_search(make_get_request, es_write_data, query_data: dict, expecte
                 {"id": "caf76c67-c0fe-477e-8766-3ab3ff2574b5", "name": "Ben"},
                 {"id": "b45bd7bc-2e16-46d5-b125-983d356768c6", "name": "Howard"},
             ],
+            "directors": [{"id": "ef86b8ff-3c82-4d31-ad8e-72b69f4e3f95", "name": "Stan"}],
         }
         for _ in range(60)
     ]

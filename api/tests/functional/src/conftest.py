@@ -1,9 +1,11 @@
+import asyncio
 import json
 import logging
 import os
 from typing import Any
 
 import aiohttp
+import pytest
 import pytest_asyncio
 from elasticsearch import AsyncElasticsearch
 from elasticsearch.helpers import async_bulk
@@ -11,6 +13,14 @@ from elasticsearch.helpers import async_bulk
 from .settings import ElasticsearchSettings, FastAPISettings
 
 logger = logging.getLogger(__name__)
+
+
+# @pytest.fixture(scope="session")
+# def event_loop():
+#     policy = asyncio.get_event_loop_policy()
+#     loop = policy.new_event_loop()
+#     yield loop
+#     loop.close()
 
 
 @pytest_asyncio.fixture(name="es_client", scope="session")
@@ -21,7 +31,8 @@ async def es_client():
     await es_client.close()
 
 
-@pytest_asyncio.fixture(name="http_client")
+# Please don't use that method. It fails with event loop is closed
+@pytest_asyncio.fixture(name="http_client", scope="session")
 async def http_client():
     # timout is required as if something goes wrong script will just hang
     session_timeout = aiohttp.ClientTimeout(total=None, sock_connect=5, sock_read=5)
@@ -43,10 +54,13 @@ def es_write_data(es_client):
 
 
 @pytest_asyncio.fixture(name="make_get_request")
-def make_get_request(http_client: aiohttp.ClientSession):
+def make_get_request(http_client):
     api_settings = FastAPISettings()
 
     async def inner(path: str, query_data: dict):
+        # timout is required as if something goes wrong script will just hang
+        # session_timeout = aiohttp.ClientTimeout(total=None, sock_connect=5, sock_read=5)
+        # async with aiohttp.ClientSession(timeout=session_timeout) as session:
         url = api_settings.url + path
         async with http_client.get(url, params=query_data) as response:
             body = await response.json()

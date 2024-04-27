@@ -29,7 +29,7 @@ services:
   
   tests:
     build:
-      context: ../../.
+      context: .
     depends_on:
       - elasticsearch
       - redis
@@ -37,11 +37,8 @@ services:
     env_file:
       - path: ./.env
         required: true
-    volumes:
-      - .:/opt/tests/functional
     entrypoint: >
-      sh -c "pip install -r /opt/tests/functional/requirements.txt
-      && cd /opt/tests
+      sh -c "ls && pwd && cd /opt
       && python3 -m functional.utils.wait_for_es
       && python3 -m functional.utils.wait_for_redis
-      && pytest /opt/tests/functional/src"
+      && pytest ./functional/tests"
