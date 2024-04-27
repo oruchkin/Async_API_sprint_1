@@ -1,17 +1,18 @@
 import uuid
 
 import pytest
+from redis.asyncio import Redis
 
 
 @pytest.mark.parametrize(
     "query_data, expected_answer",
     [
-        ({"query": "The Star"}, {"status": 200, "length": 53}),
-        ({"query": "Mashed potato"}, {"status": 200, "length": 2}),
+        ({"query": "The Star", "page_size": 60}, {"status": 200, "length": 60}),
+        ({"query": "Mashed potato", "page_size": 60}, {"status": 200, "length": 0}),
     ],
 )
-@pytest.mark.asyncio(scope="session")
-async def test_search(make_get_request, es_write_data, query_data: dict, expected_answer: dict):
+@pytest.mark.asyncio(scope="function")
+async def test_search(make_get_request, es_write_data, redis_client: Redis, query_data: dict, expected_answer: dict):
 
     # arrange
     es_data = [
@@ -47,11 +48,15 @@ async def test_search(make_get_request, es_write_data, query_data: dict, expecte
         await es_write_data(bulk_query)
 
         # act
+        keys_before = await redis_client.keys()
         (status, body) = await make_get_request("/api/v1/films/search", query_data)
+        keys_after = await redis_client.keys()
 
         # assert
+        assert len(keys_after) > len(keys_before), "Cache key must be set"
         assert status == expected_answer["status"]
         assert len(body) == expected_answer["length"]
+
     except AssertionError as err:
         # do not catch AssertionErrors
         raise err

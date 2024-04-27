@@ -1,29 +1,38 @@
-import asyncio
 import json
 import logging
 import os
+import urllib.parse
 from typing import Any
 
 import aiohttp
-import pytest
 import pytest_asyncio
 from elasticsearch import AsyncElasticsearch
 from elasticsearch.helpers import async_bulk
+from redis.asyncio import Redis
 
-from .settings import ElasticsearchSettings, FastAPISettings
+from .settings import ElasticsearchSettings, FastAPISettings, RedisSettings
 
 logger = logging.getLogger(__name__)
 
 
-# @pytest.fixture(scope="session")
-# def event_loop():
-#     policy = asyncio.get_event_loop_policy()
-#     loop = policy.new_event_loop()
-#     yield loop
-#     loop.close()
+@pytest_asyncio.fixture(scope="function")
+async def redis_client():
+    redis_settings = RedisSettings()
+    redis_client = Redis(host=redis_settings.host, port=redis_settings.port, decode_responses=True)
+    yield redis_client
+    await redis_client.aclose()
 
 
-@pytest_asyncio.fixture(name="es_client", scope="session")
+@pytest_asyncio.fixture(scope="function", autouse=True)
+async def cleanup_cache(redis_client: Redis):
+    yield
+    # never use .keys in prod!
+    keys = await redis_client.keys()
+    for key in keys:
+        await redis_client.delete(key)
+
+
+@pytest_asyncio.fixture(scope="function")
 async def es_client():
     es_esttings = ElasticsearchSettings()
     es_client = AsyncElasticsearch(hosts=es_esttings.url, verify_certs=False)
@@ -31,8 +40,7 @@ async def es_client():
     await es_client.close()
 
 
-# Please don't use that method. It fails with event loop is closed
-@pytest_asyncio.fixture(name="http_client", scope="session")
+@pytest_asyncio.fixture(scope="function")
 async def http_client():
     # timout is required as if something goes wrong script will just hang
     session_timeout = aiohttp.ClientTimeout(total=None, sock_connect=5, sock_read=5)
@@ -41,10 +49,11 @@ async def http_client():
     await session.close()
 
 
-@pytest_asyncio.fixture(name="es_write_data")
-def es_write_data(es_client):
+@pytest_asyncio.fixture
+def es_write_data(es_client: AsyncElasticsearch):
     async def inner(data: list[dict]):
-        if await es_client.indices.exists(index="movies"):
+        indices = await es_client.indices.get_alias(index="*")
+        if "movies" in indices:
             await es_client.indices.delete(index="movies")
         await es_client.indices.create(index="movies", body=_get_schema("movies"))
 
@@ -53,16 +62,27 @@ def es_write_data(es_client):
     return inner
 
 
-@pytest_asyncio.fixture(name="make_get_request")
-def make_get_request(http_client):
+@pytest_asyncio.fixture(scope="function", autouse=True)
+async def cleanup_data(es_client: AsyncElasticsearch):
+    yield
+    indices = await es_client.indices.get_alias(index="*")
+    if "movies" in indices:
+        await es_client.indices.delete(index="movies")
+
+
+@pytest_asyncio.fixture()
+def make_get_request(http_client: aiohttp.ClientSession):
     api_settings = FastAPISettings()
 
     async def inner(path: str, query_data: dict):
-        # timout is required as if something goes wrong script will just hang
-        # session_timeout = aiohttp.ClientTimeout(total=None, sock_connect=5, sock_read=5)
-        # async with aiohttp.ClientSession(timeout=session_timeout) as session:
         url = api_settings.url + path
-        async with http_client.get(url, params=query_data) as response:
+
+        # aiohttp.get encodes query parameters in really silly way
+        # thinking that it's form data.
+        # Specifically it encodes whitespace as + instead of %20.
+        # So we have to do it manually
+        params = urllib.parse.urlencode(query_data, quote_via=urllib.parse.quote)
+        async with http_client.get(url, params=params) as response:
             body = await response.json()
             if response.status >= 400:
                 raise ValueError(body)
