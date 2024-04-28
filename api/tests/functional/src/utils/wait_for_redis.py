@@ -6,10 +6,12 @@ from redis import Redis
 from ..settings import RedisSettings
 
 logging.basicConfig()
-logging.root.setLevel(logging.NOTSET)
-logging.basicConfig(level=logging.NOTSET)
+logging.root.setLevel(logging.WARNING)
+logging.basicConfig(level=logging.WARNING)
+logging.getLogger("elasticsearch").setLevel(logging.ERROR)
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("wait_for_redis")
+logger.setLevel(logging.INFO)
 
 if __name__ == "__main__":
     r_settings = RedisSettings()

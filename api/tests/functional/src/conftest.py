@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import os
@@ -58,6 +59,15 @@ def es_write_data(es_client: AsyncElasticsearch):
         await es_client.indices.create(index="movies", body=_get_schema("movies"))
 
         await async_bulk(client=es_client, actions=data)
+        while True:
+            stats = await es_client.indices.stats(index="*")
+            primaries = stats["_all"]["primaries"]
+            searchable_docs = primaries["docs"]["count"]
+            index_docs = primaries["indexing"]["index_total"]
+            logger.info(f"{searchable_docs} vs {index_docs} total")
+            if searchable_docs >= index_docs:
+                return
+            await asyncio.sleep(1)
 
     return inner
 
@@ -75,14 +85,13 @@ def make_get_request(http_client: aiohttp.ClientSession):
     api_settings = FastAPISettings()
 
     async def inner(path: str, query_data: dict):
-        url = api_settings.url + path
-
         # aiohttp.get encodes query parameters in really silly way
-        # thinking that it's form data.
+        # thinking that it's form data (application/x-www-form-urlencoded).
         # Specifically it encodes whitespace as + instead of %20.
         # So we have to do it manually
         params = urllib.parse.urlencode(query_data, quote_via=urllib.parse.quote)
-        async with http_client.get(url, params=params) as response:
+        url = api_settings.url + path + f"?{params}"
+        async with http_client.get(url) as response:
             body = await response.json()
             if response.status >= 400:
                 raise ValueError(body)
