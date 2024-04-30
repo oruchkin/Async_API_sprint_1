@@ -58,16 +58,7 @@ def es_write_data(es_client: AsyncElasticsearch):
             await es_client.indices.delete(index="movies")
         await es_client.indices.create(index="movies", body=_get_schema("movies"))
 
-        await async_bulk(client=es_client, actions=data)
-        while True:
-            stats = await es_client.indices.stats(index="*")
-            primaries = stats["_all"]["primaries"]
-            searchable_docs = primaries["docs"]["count"]
-            index_docs = primaries["indexing"]["index_total"]
-            logger.info(f"{searchable_docs} vs {index_docs} total")
-            if searchable_docs >= index_docs:
-                return
-            await asyncio.sleep(1)
+        await async_bulk(client=es_client, actions=data, refresh="wait_for")
 
     return inner
 
