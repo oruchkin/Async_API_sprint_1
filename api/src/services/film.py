@@ -36,6 +36,11 @@ class FilmService(ServiceABC):
 
         from_index = (page_number - 1) * page_size
         query = {"match_all": {}}
+
+        if genre:
+            if genre_record := await self._get_from_elastic("genres", genre):
+                query = {"bool": {"filter": [{"term": {"genres": genre_record["name"]}}]}}
+
         films_data = await self._query_from_elastic("movies", query, size=page_size, skip=from_index, sort=sort)
 
         prepared_films = []
@@ -49,14 +54,8 @@ class FilmService(ServiceABC):
         """
         get_by_id возвращает объект фильма. Он опционален, так как фильм может отсутствовать в базе
         """
-        cache_key = f"movies:{film_id}"
-        if film := await self._film_from_cache(cache_key):
-            return film
-
         if doc := await self._get_from_elastic("movies", film_id):
-            film = Film(**doc)
-            await self._put_film_to_cache(cache_key, film)
-            return film
+            return Film(**doc)
 
     async def find_by_all_persons(self, person_ids: list[UUID]) -> dict[UUID, list[Film]]:
         subqueries = [FilmService._construct_find_by_all_persons_subquery(person_ids, m) for m in get_args(PERSON_ROLE)]
