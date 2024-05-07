@@ -100,14 +100,6 @@ class FilmService(ServiceABC):
 
         return person_ids
 
-    async def _film_from_cache(self, key: str) -> Film | None:
-        if data := await self.redis.get(key):
-            return Film.model_validate_json(data)
-
-    async def _put_film_to_cache(self, key: str, film: Film):
-        value = film.model_dump_json()
-        await self.redis.set(key, value, FILM_CACHE_EXPIRE_IN_SECONDS)
-
 
 @lru_cache()
 def get_film_service(
