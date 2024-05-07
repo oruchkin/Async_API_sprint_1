@@ -3,10 +3,10 @@ from typing import Literal
 from uuid import UUID
 
 from api.v1.schemas.film import Film
-from db.redis import get_redis
+from db.redis import get_cache
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import TypeAdapter
-from redis import Redis
+from services.cache.storage import ICache
 from services.film import FilmService, get_film_service
 
 router = APIRouter()
@@ -23,12 +23,12 @@ async def list_films(
     sort: SORT_OPTION = Query("imdb_rating", description="Sorting options"),
     genre: UUID | None = Query(None, description="Films by genre"),
     film_service: FilmService = Depends(get_film_service),
-    redis: Redis = Depends(get_redis),
+    cache: ICache = Depends(get_cache),
 ) -> list[Film]:
     key = f"films:{page_number}:{page_size}:{genre}:{sort}"
     adapter = TypeAdapter(list[Film])
-    if cache := await redis.get(key):
-        return adapter.validate_json(cache)
+    if cached := await cache.get(key):
+        return adapter.validate_json(cached)
 
     sort_object: dict[str, int] | None = None
     if sort:
@@ -41,8 +41,8 @@ async def list_films(
                 sort_object[item] = 1
     films = await film_service.get_all_films(page_number, page_size, genre, sort_object)
     mapped = [Film.model_validate(film) for film in films]
-    cache = adapter.dump_json(mapped)
-    await redis.set(key, cache, 60 * 5)
+    cached = adapter.dump_json(mapped)
+    await cache.set(key, cached, 60 * 5)
     response.headers["Cache-Control"] = f"max-age={60 * 5}"
     return mapped
 
@@ -54,17 +54,17 @@ async def search_films(
     page_number: int = Query(1, description="Page number", ge=1),
     page_size: int = Query(10, description="Page size", ge=1, le=100),
     film_service: FilmService = Depends(get_film_service),
-    redis: Redis = Depends(get_redis),
+    cache: ICache = Depends(get_cache),
 ) -> list[Film]:
     key = f"films:{query}:{page_number}:{page_size}"
     adapter = TypeAdapter(list[Film])
-    if cache := await redis.get(key):
-        return adapter.validate_json(cache)
+    if cached := await cache.get(key):
+        return adapter.validate_json(cached)
 
     films = await film_service.search_films(query, page_number, page_size)
     mapped = [Film.model_validate(film) for film in films]
-    cache = adapter.dump_json(mapped)
-    await redis.set(key, cache, 60 * 5)
+    cached = adapter.dump_json(mapped)
+    await cache.set(key, cached, 60 * 5)
     response.headers["Cache-Control"] = f"max-age={60 * 5}"
     return mapped
 

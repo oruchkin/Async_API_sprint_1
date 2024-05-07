@@ -5,11 +5,9 @@ from typing import Literal, get_args
 from uuid import UUID
 
 from db.elastic import get_elastic
-from db.redis import get_redis
 from elasticsearch import AsyncElasticsearch
 from fastapi import Depends
 from models.film import Film
-from redis.asyncio import Redis
 from services.base import ServiceABC
 
 FILM_CACHE_EXPIRE_IN_SECONDS = 60 * 5
@@ -18,9 +16,8 @@ PERSON_ROLE = Literal["directors", "actors", "writers"]
 
 
 class FilmService(ServiceABC):
-    def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
+    def __init__(self, elastic: AsyncElasticsearch):
         super().__init__(elastic)
-        self.redis = redis
 
     async def search_films(self, query: str, page_number: int = 1, page_size: int = 10) -> list[Film]:
         """Поиск фильмов по текстовому запросу и фильтрам."""
@@ -100,18 +97,9 @@ class FilmService(ServiceABC):
 
         return person_ids
 
-    async def _film_from_cache(self, key: str) -> Film | None:
-        if data := await self.redis.get(key):
-            return Film.model_validate_json(data)
-
-    async def _put_film_to_cache(self, key: str, film: Film):
-        value = film.model_dump_json()
-        await self.redis.set(key, value, FILM_CACHE_EXPIRE_IN_SECONDS)
-
 
 @lru_cache()
 def get_film_service(
-    redis: Redis = Depends(get_redis),
     elastic: AsyncElasticsearch = Depends(get_elastic),
 ) -> FilmService:
-    return FilmService(redis, elastic)
+    return FilmService(elastic)
