@@ -138,7 +138,7 @@ async def test_get_film(make_get_request, es_write_data, redis_client: Redis):
 
     # act
     keys_before = await redis_client.keys()
-    (status, body) = await make_get_request(f"/api/v1/films/{target_film["id"]}")
+    (status, body) = await make_get_request(f"/api/v1/films/{target_film['id']}")
     keys_after = await redis_client.keys()
 
     # assert
@@ -154,7 +154,7 @@ async def test_get_film_not_found(make_get_request):
     target_film = films_data[0]
 
     # act
-    (status, _) = await make_get_request(f"/api/v1/films/{target_film["id"]}")
+    (status, _) = await make_get_request(f"/api/v1/films/{target_film['id']}")
 
     # assert
     # TODO (agrebennikov): it should not return 404!
