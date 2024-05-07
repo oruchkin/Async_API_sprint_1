@@ -1,3 +1,4 @@
+import random
 import uuid
 
 import pytest
@@ -7,8 +8,12 @@ from redis.asyncio import Redis
 @pytest.mark.parametrize(
     "query_data, expected_answer",
     [
-        ({"query": "The Star", "page_size": 60}, {"status": 200, "length": 60}),
-        ({"query": "Mashed potato", "page_size": 60}, {"status": 200, "length": 0}),
+        ({"query": "The Star", "page_size": 20}, {"status": 200, "length": 15}),
+        ({"query": "The Star", "page_size": 20, "page_number": 2}, {"status": 200, "length": 0}),
+        ({"query": "The Star", "page_size": 20, "page_number": 0}, {"status": 422}),
+        ({"query": "The Star", "page_size": 0}, {"status": 422}),
+        ({"query": "Mashed potato", "page_size": 20}, {"status": 200, "length": 5}),
+        ({"query": "Th"}, {"status": 422}),
     ],
 )
 @pytest.mark.asyncio(scope="function")
@@ -18,9 +23,9 @@ async def test_search(make_get_request, es_write_data, redis_client: Redis, quer
     es_data = [
         {
             "id": str(uuid.uuid4()),
-            "imdb_rating": 8.5,
+            "imdb_rating": random.randint(0, 10),
             "genres": ["Action", "Sci-Fi"],
-            "title": "The Star",
+            "title": "The Star" if ix < 15 else "Mashed potato",
             "description": "New World",
             "directors_names": ["Stan"],
             "actors_names": ["Ann", "Bob"],
@@ -35,30 +40,19 @@ async def test_search(make_get_request, es_write_data, redis_client: Redis, quer
             ],
             "directors": [{"id": "ef86b8ff-3c82-4d31-ad8e-72b69f4e3f95", "name": "Stan"}],
         }
-        for _ in range(60)
+        for ix in range(20)
     ]
 
-    bulk_query: list[dict] = []
-    for row in es_data:
-        data = {"_index": "movies", "_id": row["id"]}
-        data.update({"_source": row})
-        bulk_query.append(data)
+    bulk_query = [{"_index": "movies", "_id": row["id"], "_source": row} for row in es_data]
+    await es_write_data(bulk_query)
 
-    try:
-        await es_write_data(bulk_query)
+    # act
+    keys_before = await redis_client.keys()
+    (status, body) = await make_get_request("/api/v1/films/search", query_data)
+    keys_after = await redis_client.keys()
 
-        # act
-        keys_before = await redis_client.keys()
-        (status, body) = await make_get_request("/api/v1/films/search", query_data)
-        keys_after = await redis_client.keys()
-
-        # assert
+    # assert
+    assert status == expected_answer["status"]
+    if status < 400:
         assert len(keys_after) > len(keys_before), "Cache key must be set"
-        assert status == expected_answer["status"]
         assert len(body) == expected_answer["length"]
-
-    except AssertionError as err:
-        # do not catch AssertionErrors
-        raise err
-    except Exception as err:
-        assert False, err
