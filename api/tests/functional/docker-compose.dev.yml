@@ -19,7 +19,7 @@ services:
     build:
       context: ../../.
     ports:
-      - 53942:8000
+      - 8000:8000
     depends_on:
       - elasticsearch
       - redis

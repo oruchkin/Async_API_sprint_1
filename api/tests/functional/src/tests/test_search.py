@@ -46,7 +46,7 @@ async def test_search(make_get_request, es_write_data, redis_client: Redis, quer
 
     # arrange
     bulk_query = construct_es_documents("movies", es_films)
-    await es_write_data(bulk_query)
+    await es_write_data(bulk_query, "movies")
 
     # act
     keys_before = await redis_client.keys()
