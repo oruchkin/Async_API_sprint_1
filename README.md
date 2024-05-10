@@ -22,7 +22,8 @@
 [Kanban Доска Проекта](https://github.com/users/oruchkin/projects/4)
 
 
-
+## В этом репозитории так же находятся тесты спринта Async_API_sprint_2
+ссылка на оригинальный репозиторий: [Async_API_sprint_2](https://github.com/oruchkin/Async_API_sprint_2)
 
 
 
