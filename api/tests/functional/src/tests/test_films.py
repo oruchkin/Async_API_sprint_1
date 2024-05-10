@@ -5,7 +5,14 @@ from redis.asyncio import Redis
 
 from .utils import construct_es_documents
 
-genres_data = [{"id": str(uuid.uuid4()), "name": f"genre-{ix}", "description": ""} for ix in range(5)]
+genres_data = [
+    {
+        "id": str(uuid.uuid4()),
+        "name": f"genre-{ix}",
+        "description": f"Description for genre-{ix}"
+    }
+    for ix in range(5)
+]
 
 films_data = [
     {
@@ -33,11 +40,11 @@ films_data = [
 
 @pytest.mark.asyncio(scope="function")
 async def test_list_films_by_genre(make_get_request, es_write_data, redis_client: Redis):
-
     # arrange
     es_films = construct_es_documents("movies", films_data)
     es_genres = construct_es_documents("genres", genres_data)
-    await es_write_data(es_films + es_genres)
+    await es_write_data(es_films, "movies")
+    await es_write_data(es_genres, "genres")
 
     target_genre = genres_data[0]
 
@@ -56,10 +63,9 @@ async def test_list_films_by_genre(make_get_request, es_write_data, redis_client
 
 @pytest.mark.asyncio(scope="function")
 async def test_list_films_fail_on_wrong_page_size(make_get_request, es_write_data):
-
     # arrange
     es_films = construct_es_documents("movies", films_data)
-    await es_write_data(es_films)
+    await es_write_data(es_films, "movies")
 
     # act
     query_data = {"page_size": 0}
@@ -72,10 +78,9 @@ async def test_list_films_fail_on_wrong_page_size(make_get_request, es_write_dat
 
 @pytest.mark.asyncio(scope="function")
 async def test_list_films_fail_on_wrong_page(make_get_request, es_write_data):
-
     # arrange
     es_films = construct_es_documents("movies", films_data)
-    await es_write_data(es_films)
+    await es_write_data(es_films, "movies")
 
     # act
     query_data = {"page_number": 0}
@@ -88,10 +93,9 @@ async def test_list_films_fail_on_wrong_page(make_get_request, es_write_data):
 
 @pytest.mark.asyncio(scope="function")
 async def test_list_films_page_number(make_get_request, es_write_data):
-
     # arrange
     es_films = construct_es_documents("movies", films_data)
-    await es_write_data(es_films)
+    await es_write_data(es_films, "movies")
 
     # act
     query_data = {"page_number": 100}
@@ -104,10 +108,9 @@ async def test_list_films_page_number(make_get_request, es_write_data):
 
 @pytest.mark.asyncio(scope="function")
 async def test_list_films(make_get_request, es_write_data, redis_client: Redis):
-
     # arrange
     es_films = construct_es_documents("movies", films_data)
-    await es_write_data(es_films)
+    await es_write_data(es_films, "movies")
 
     # act
     keys_before = await redis_client.keys()
@@ -129,10 +132,9 @@ async def test_list_films(make_get_request, es_write_data, redis_client: Redis):
 
 @pytest.mark.asyncio(scope="function")
 async def test_get_film(make_get_request, es_write_data, redis_client: Redis):
-
     # arrange
     es_films = construct_es_documents("movies", films_data)
-    await es_write_data(es_films)
+    await es_write_data(es_films, "movies")
 
     target_film = films_data[3]
 
@@ -149,7 +151,6 @@ async def test_get_film(make_get_request, es_write_data, redis_client: Redis):
 
 @pytest.mark.asyncio(scope="function")
 async def test_get_film_not_found(make_get_request):
-
     # arrange
     target_film = films_data[0]
 

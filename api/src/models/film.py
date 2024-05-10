@@ -11,8 +11,8 @@ class PersonId(BaseOrjsonModel):
 class Film(BaseOrjsonModel):
     id: UUID
     title: str
-    description: str | None
-    imdb_rating: float | None
+    description: str | None = None
+    imdb_rating: float | None = None
     directors: list[PersonId]
     actors: list[PersonId]
     writers: list[PersonId]

@@ -51,11 +51,10 @@ async def http_client():
 
 @pytest_asyncio.fixture
 def es_write_data(es_client: AsyncElasticsearch):
-    async def inner(data: list[dict]):
+    async def inner(data: list[dict], index: str):
         indices = await es_client.indices.get_alias(index="*")
-        if "movies" in indices:
-            await es_client.indices.delete(index="movies")
-        await es_client.indices.create(index="movies", body=_get_schema("movies"))
+        if index not in indices:
+            await es_client.indices.create(index=index, body=_get_schema(index))
 
         await async_bulk(client=es_client, actions=data, refresh="wait_for")
 
@@ -66,8 +65,8 @@ def es_write_data(es_client: AsyncElasticsearch):
 async def cleanup_data(es_client: AsyncElasticsearch):
     yield
     indices = await es_client.indices.get_alias(index="*")
-    if "movies" in indices:
-        await es_client.indices.delete(index="movies")
+    for index in indices:
+        await es_client.indices.delete(index=index)
 
 
 def encode_url(url: str, path: str, query: dict | None = None) -> str:

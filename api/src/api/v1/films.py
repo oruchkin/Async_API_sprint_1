@@ -15,7 +15,9 @@ router = APIRouter()
 SORT_OPTION = Literal["imdb_rating", "-imdb_rating"]
 
 
-@router.get("/", response_model=list[Film])
+@router.get("/", response_model=list[Film],
+            summary="Список всех фильмов",
+            description="Возвращает полный список фильмов")
 async def list_films(
     response: Response,
     page_number: int = Query(1, description="Page number [1, N]", ge=1),
@@ -47,7 +49,10 @@ async def list_films(
     return mapped
 
 
-@router.get("/search", response_model=list[Film])
+@router.get("/search",
+            response_model=list[Film],
+            summary="Поиск по фильмам",
+            description="Возвращает список фильмов по поисковому запросу")
 async def search_films(
     response: Response,
     query: str = Query(min_length=3, description="Search query string"),
@@ -69,7 +74,10 @@ async def search_films(
     return mapped
 
 
-@router.get("/{film_id}", response_model=Film, summary="Полная информация по фильму")
+@router.get("/{film_id}",
+            response_model=Film,
+            summary="Данные по конкретному фильму",
+            description="Возвращает подробную информацию о фильме.")
 async def film_details(film_id: UUID, film_service: FilmService = Depends(get_film_service)) -> Film:
     if film := await film_service.get_by_id(film_id):
         return Film.model_validate(film)
