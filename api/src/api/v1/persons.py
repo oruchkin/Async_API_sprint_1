@@ -5,6 +5,7 @@ from uuid import UUID
 
 from api.v1.films import Film
 from api.v1.schemas.person import Person, PersonFilm
+from api.v1.schemas.pagination import PaginatedParams
 from db.redis import get_cache
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from models.film import Film as FilmModel
@@ -27,18 +28,17 @@ logger = logging.getLogger(__name__)
 async def search_persons(
     response: Response,
     query: str = Query(..., min_length=3, description="Search string"),
-    page_number: Annotated[int | None, Query(..., ge=1, description="Page number [1, N]")] = 1,
-    page_size: Annotated[int | None, Query(..., ge=1, le=100, description="Page size [1, 100]")] = 50,
+    pagination: PaginatedParams = Depends(),
     person_film_service: PersonFilmService = Depends(get_person_film_service),
     cache: ICache = Depends(get_cache),
 ) -> list[Person]:
-    key = f"persons:{query}:{page_number}:{page_size}"
+    key = f"persons:{query}:{pagination.page_number}:{pagination.page_size}"
     adapter = TypeAdapter(list[Person])
     if cached := await cache.get(key):
         return adapter.validate_json(cached)
 
     logger.debug("Persons search cache missed")
-    entities = await person_film_service.search(query, page_number or 1, page_size or 50)
+    entities = await person_film_service.search(query, pagination.page_number or 1, pagination.page_size or 50)
     persons = [_construct_person_films(person, films) for (person, films) in entities]
     cached = adapter.dump_json(persons)
     await cache.set(key, cached, 60 * 5)
