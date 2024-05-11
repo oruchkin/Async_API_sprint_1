@@ -3,6 +3,7 @@ from typing import Literal
 from uuid import UUID
 
 from api.v1.schemas.film import Film
+from api.v1.schemas.pagination import PaginatedParams
 from db.redis import get_cache
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import TypeAdapter
@@ -20,14 +21,13 @@ SORT_OPTION = Literal["imdb_rating", "-imdb_rating"]
             description="Возвращает полный список фильмов")
 async def list_films(
     response: Response,
-    page_number: int = Query(1, description="Page number [1, N]", ge=1),
-    page_size: int = Query(10, description="Page size [1, 100]", ge=1, le=100),
+    pagination: PaginatedParams = Depends(),
     sort: SORT_OPTION = Query("imdb_rating", description="Sorting options"),
     genre: UUID | None = Query(None, description="Films by genre"),
     film_service: FilmService = Depends(get_film_service),
     cache: ICache = Depends(get_cache),
 ) -> list[Film]:
-    key = f"films:{page_number}:{page_size}:{genre}:{sort}"
+    key = f"films:{pagination.page_number}:{pagination.page_size}:{genre}:{sort}"
     adapter = TypeAdapter(list[Film])
     if cached := await cache.get(key):
         return adapter.validate_json(cached)
@@ -41,7 +41,7 @@ async def list_films(
                 sort_object[item[1:]] = -1
             else:
                 sort_object[item] = 1
-    films = await film_service.get_all_films(page_number, page_size, genre, sort_object)
+    films = await film_service.get_all_films(pagination.page_number, pagination.page_size, genre, sort_object)
     mapped = [Film.model_validate(film) for film in films]
     cached = adapter.dump_json(mapped)
     await cache.set(key, cached, 60 * 5)
@@ -56,17 +56,16 @@ async def list_films(
 async def search_films(
     response: Response,
     query: str = Query(min_length=3, description="Search query string"),
-    page_number: int = Query(1, description="Page number", ge=1),
-    page_size: int = Query(10, description="Page size", ge=1, le=100),
+    pagination: PaginatedParams = Depends(),
     film_service: FilmService = Depends(get_film_service),
     cache: ICache = Depends(get_cache),
 ) -> list[Film]:
-    key = f"films:{query}:{page_number}:{page_size}"
+    key = f"films:{query}:{pagination.page_number}:{pagination.page_size}"
     adapter = TypeAdapter(list[Film])
     if cached := await cache.get(key):
         return adapter.validate_json(cached)
 
-    films = await film_service.search_films(query, page_number, page_size)
+    films = await film_service.search_films(query, pagination.page_number, pagination.page_size)
     mapped = [Film.model_validate(film) for film in films]
     cached = adapter.dump_json(mapped)
     await cache.set(key, cached, 60 * 5)

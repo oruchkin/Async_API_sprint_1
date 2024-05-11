@@ -1,6 +1,9 @@
-import pytest
 import uuid
+from http import HTTPStatus
+
+import pytest
 from redis.asyncio import Redis
+
 from .utils import construct_es_documents
 
 genres_data = [
@@ -21,7 +24,7 @@ async def test_get_genre(make_get_request, es_write_data):
     genre_id = genres_data[0]["id"]
     (status, body) = await make_get_request(f"/api/v1/genres/{genre_id}/")
 
-    assert status == 200
+    assert status == HTTPStatus.OK
     assert body["id"] == genre_id
     assert body["name"] == genres_data[0]["name"]
     assert body["description"] == genres_data[0]["description"]
@@ -35,14 +38,14 @@ async def test_get_genre_not_found(make_get_request, es_write_data):
     non_existent_id = uuid.uuid4()
     (status, _) = await make_get_request(f"/api/v1/genres/{non_existent_id}/")
 
-    assert status == 404
+    assert status == HTTPStatus.NOT_FOUND
 
 
 @pytest.mark.asyncio
 async def test_get_genre_invalid_uuid(make_get_request):
     invalid_uuid = "invalid-uuid"
     (status, _) = await make_get_request(f"/api/v1/genres/{invalid_uuid}/")
-    assert status == 422
+    assert status == HTTPStatus.UNPROCESSABLE_ENTITY
 
 
 @pytest.mark.asyncio
@@ -52,7 +55,7 @@ async def test_list_all_genres(make_get_request, es_write_data):
 
     (status, body) = await make_get_request("/api/v1/genres/")
 
-    assert status == 200
+    assert status == HTTPStatus.OK
     assert len(body) == len(genres_data)
     for genre in genres_data:
         assert any(item["id"] == genre["id"] for item in body)

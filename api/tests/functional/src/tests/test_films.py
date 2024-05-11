@@ -1,4 +1,5 @@
 import uuid
+from http import HTTPStatus
 
 import pytest
 from redis.asyncio import Redis
@@ -56,7 +57,7 @@ async def test_list_films_by_genre(make_get_request, es_write_data, redis_client
 
     # assert
     assert len(keys_after) > len(keys_before), "Cache key must be set"
-    assert status == 200
+    assert status == HTTPStatus.OK
     assert len(body) == 3
     assert body[0]["imdb_rating"] > body[-1]["imdb_rating"]
 
@@ -72,7 +73,7 @@ async def test_list_films_fail_on_wrong_page_size(make_get_request, es_write_dat
     (status, body) = await make_get_request("/api/v1/films", query_data)
 
     # assert
-    assert status == 422
+    assert status == HTTPStatus.UNPROCESSABLE_ENTITY
     assert "page_size" in body["detail"][0]["loc"]
 
 
@@ -87,7 +88,7 @@ async def test_list_films_fail_on_wrong_page(make_get_request, es_write_data):
     (status, body) = await make_get_request("/api/v1/films", query_data)
 
     # assert
-    assert status == 422
+    assert status == HTTPStatus.UNPROCESSABLE_ENTITY
     assert "page_number" in body["detail"][0]["loc"]
 
 
@@ -102,7 +103,7 @@ async def test_list_films_page_number(make_get_request, es_write_data):
     (status, body) = await make_get_request("/api/v1/films", query_data)
 
     # assert
-    assert status == 200
+    assert status == HTTPStatus.OK
     assert len(body) == 0
 
 
@@ -124,7 +125,7 @@ async def test_list_films(make_get_request, es_write_data, redis_client: Redis):
 
     # assert
     assert len(keys_after) > len(keys_before), "Cache key must be set"
-    assert status == 200
+    assert status == HTTPStatus.OK
     assert len(body) == 5
     assert body[0]["imdb_rating"] > 0, "For the second page imdb_rating must be > 0"
     assert body[0]["imdb_rating"] < body[-1]["imdb_rating"]
@@ -145,7 +146,7 @@ async def test_get_film(make_get_request, es_write_data, redis_client: Redis):
 
     # assert
     assert len(keys_after) == len(keys_before), "Cache should not be set"
-    assert status == 200
+    assert status == HTTPStatus.OK
     assert body["id"] == target_film["id"]
 
 
@@ -159,4 +160,4 @@ async def test_get_film_not_found(make_get_request):
 
     # assert
     # TODO (agrebennikov): it should not return 404!
-    assert status == 404
+    assert status == HTTPStatus.NOT_FOUND

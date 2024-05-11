@@ -1,6 +1,9 @@
-import pytest
+from http import HTTPStatus
 from uuid import uuid4
+
+import pytest
 from redis.asyncio import Redis
+
 from .utils import construct_es_documents
 
 person_id = uuid4()
@@ -52,7 +55,7 @@ async def test_get_person(make_get_request, es_write_data):
 
     (status, body) = await make_get_request(f"/api/v1/persons/{person_id}")
 
-    assert status == 200
+    assert status == HTTPStatus.OK
     assert body["id"] == str(person_id)
     assert body["full_name"] == "John Doe"
     assert "gender" not in body or body["gender"] is None
@@ -67,14 +70,14 @@ async def test_get_person_not_found(make_get_request, es_write_data):
     non_existent_id = uuid4()
     (status, _) = await make_get_request(f"/api/v1/persons/{non_existent_id}")
 
-    assert status == 404
+    assert status == HTTPStatus.NOT_FOUND
 
 
 @pytest.mark.parametrize("query_data, expected_status", [
-    ({"query": "Jo", "page_size": 20}, 422),
-    ({"query": "John", "page_size": 101}, 422),
-    ({"query": "John", "page_size": 0}, 422),
-    ({"query": "John", "page_size": 20, "page_number": -5}, 422),
+    ({"query": "Jo", "page_size": 20}, HTTPStatus.UNPROCESSABLE_ENTITY),
+    ({"query": "John", "page_size": 101}, HTTPStatus.UNPROCESSABLE_ENTITY),
+    ({"query": "John", "page_size": 0}, HTTPStatus.UNPROCESSABLE_ENTITY),
+    ({"query": "John", "page_size": 20, "page_number": -5}, HTTPStatus.UNPROCESSABLE_ENTITY),
 ])
 @pytest.mark.asyncio
 async def test_search_persons_validation(make_get_request, query_data, expected_status, es_write_data):
@@ -96,7 +99,7 @@ async def test_search_person(make_get_request, es_write_data):
     query_data = {"query": "John Doe", "page_size": 10}
     (status, body) = await make_get_request("/api/v1/persons/search", query_data)
 
-    assert status == 200
+    assert status == HTTPStatus.OK
     assert len(body) == 1
     assert body[0]["full_name"] == "John Doe"
 
@@ -111,7 +114,7 @@ async def test_list_all_persons(make_get_request, es_write_data):
     query_data = {"query": "John Doe", "page_size": 50}
     (status, body) = await make_get_request("/api/v1/persons/search", query_data)
 
-    assert status == 200
+    assert status == HTTPStatus.OK
     assert len(body) == 1
     assert body[0]["full_name"] == "John Doe"
 
@@ -143,7 +146,7 @@ async def test_list_person_films(make_get_request, es_write_data):
 
     (status, body) = await make_get_request(f"/api/v1/persons/{person_id}/films")
 
-    assert status == 200
+    assert status == HTTPStatus.OK
     assert len(body) == 3
     assert any(film["title"] == "The Star" for film in body)
     assert any(film["title"] == "The Moon" for film in body)
