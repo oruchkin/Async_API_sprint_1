@@ -1,8 +1,10 @@
-import pytest
 import uuid
-from redis.asyncio import Redis
-from .utils import construct_es_documents
 from http import HTTPStatus
+
+import pytest
+from redis.asyncio import Redis
+
+from .utils import construct_es_documents
 
 genres_data = [
     {

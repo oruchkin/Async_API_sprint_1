@@ -1,8 +1,10 @@
-import pytest
-from uuid import uuid4
-from redis.asyncio import Redis
-from .utils import construct_es_documents
 from http import HTTPStatus
+from uuid import uuid4
+
+import pytest
+from redis.asyncio import Redis
+
+from .utils import construct_es_documents
 
 person_id = uuid4()
 persons_data = [
