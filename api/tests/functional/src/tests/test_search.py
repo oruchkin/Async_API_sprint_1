@@ -5,6 +5,7 @@ import pytest
 from redis.asyncio import Redis
 
 from .utils import construct_es_documents
+from http import HTTPStatus
 
 es_films = [
     {
@@ -33,12 +34,12 @@ es_films = [
 @pytest.mark.parametrize(
     "query_data, expected_answer",
     [
-        ({"query": "The Star", "page_size": 20}, {"status": 200, "length": 15}),
-        ({"query": "The Star", "page_size": 20, "page_number": 2}, {"status": 200, "length": 0}),
-        ({"query": "The Star", "page_size": 20, "page_number": 0}, {"status": 422}),
-        ({"query": "The Star", "page_size": 0}, {"status": 422}),
-        ({"query": "Mashed potato", "page_size": 20}, {"status": 200, "length": 5}),
-        ({"query": "Th"}, {"status": 422}),
+        ({"query": "The Star", "page_size": 20}, {"status": HTTPStatus.OK, "length": 15}),
+        ({"query": "The Star", "page_size": 20, "page_number": 2}, {"status": HTTPStatus.OK, "length": 0}),
+        ({"query": "The Star", "page_size": 20, "page_number": 0}, {"status": HTTPStatus.UNPROCESSABLE_ENTITY}),
+        ({"query": "The Star", "page_size": 0}, {"status": HTTPStatus.UNPROCESSABLE_ENTITY}),
+        ({"query": "Mashed potato", "page_size": 20}, {"status": HTTPStatus.OK, "length": 5}),
+        ({"query": "Th"}, {"status": HTTPStatus.UNPROCESSABLE_ENTITY}),
     ],
 )
 @pytest.mark.asyncio(scope="function")

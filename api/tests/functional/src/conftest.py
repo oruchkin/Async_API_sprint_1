@@ -92,7 +92,7 @@ def make_get_request(http_client: aiohttp.ClientSession):
             if response.status >= 500:
                 raise ValueError(body)
 
-            return (response.status, body)
+            return response.status, body
 
     return inner
 
